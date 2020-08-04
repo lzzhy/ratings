@@ -1,22 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>星级评分：第一种实现方式</title>
     <style>
-        body,ul,li {
+        body,
+        ul,
+        li {
             padding: 0;
             margin: 0;
         }
+
         li {
             list-style-type: none;
         }
+
         .rating {
             width: 160px;
             height: 32px;
             margin: 100px auto;
         }
+
         .rating-item {
             float: left;
             width: 32px;
@@ -26,6 +32,7 @@
         }
     </style>
 </head>
+
 <body>
     <ul id="rating" class="rating">
         <li class="rating-item" title="很不好"></li>
@@ -39,14 +46,14 @@
         var num = 2,
             $rating = $('#rating'),
             $item = $rating.find('.rating-item')
-        
+
         // 点亮，通过参数 num
-        var lightOn = function(num) {
-            $item.each(function(index) {
-                if(index < num) {
-                    $(this).css('background-position','0 -40px')
+        var lightOn = function (num) {
+            $item.each(function (index) {
+                if (index < num) {
+                    $(this).css('background-position', '0 -40px')
                 } else {
-                    $(this).css('background-position','0 0')
+                    $(this).css('background-position', '0 0')
                 }
             })
         }
@@ -54,17 +61,17 @@
         // 初始
         lightOn(num)
 
-        // 事件绑定
-        $item.on('mouseover',function() {
+        // 事件绑定 mouseover, click
+        $item.on('mouseover', function () {
             lightOn($(this).index() + 1)
-        }).on('click',function() {
+        }).on('click', function () {
             num = $(this).index() + 1
         })
 
-        $rating.on('mouseout',function() {
+        $rating.on('mouseout', function () {
             lightOn(num)
         })
     </script>
 </body>
-</html>
 
+</html>
