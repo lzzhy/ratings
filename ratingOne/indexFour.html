@@ -94,6 +94,9 @@
             light.prototype.select = function() {
                 throw new Error('子类必须重写此方法')
             }
+            light.prototype.unbindEvent = function() {
+                this.$el.off()
+            }
 
             // 点亮整颗
             var lightEntire = function(el,options) {
@@ -142,13 +145,27 @@
                 'lightEntire': lightEntire,
                 'lightHalf': lightHalf
             }
-            var init = function(el,options) {
-                options = $.extend({},defaults,options)
+            var init = function(el,option) {
+                var $el = $(el),rating = $el.data('rating'),
+                    options = $.extend({},defaults,typeof option === 'object' && option);
                 if(!mode[options.mode]) {
                     options.mode = 'lightEntire'
                 }
-                new mode[options.mode](el, options).init();
+                if(!rating) {
+                    $el.data('rating',(rating =new mode[options.mode](el, options)));
+                    rating.init();
+                }
+                if(typeof option === 'string') rating[option]();
             }
+
+            // jquery 插件
+            $.fn.extend({
+                rating: function(option) {
+                    return this.each(function() {
+                        init(this,option)
+                    });
+                }
+            })
             return {
                 init: init
             }
@@ -156,6 +173,10 @@
         rating.init('#rating',{
             mode: 'lightEntire',
             num: 2,
+            // 选中后禁止再次选中
+            chosen: function() {
+                rating.init('#rating','unbindEvent')
+            }
         })
     </script>
 </body>
