@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>星级评分：用设计模式的模板方法重写 indexTwo.html 实现方法,(点亮一颗或半颗)</title>
+    <title>星级评分：为第三种方法 indexThree.html 文件 提取出抽象父类</title>
     <style>
         body,ul,li {
             padding: 0;
@@ -37,15 +37,26 @@
     <script src="http://libs.baidu.com/jquery/1.11.3/jquery.min.js"></script>
     <script>
         var rating = (function() {
-            // 点亮整颗
-            // 初始化 lightEntire 函数
-            var lightEntire = function(el,options) {
+            // 继承
+            var extend = function(subClass,superClass) {
+                var F = function() {};
+                F.prototype = superClass.prototype;
+                subClass.prototype = new F();
+                subClass.prototype.construtor = subClass;
+            }
+
+            // 点亮
+            // 抽离出来的父类
+            var light = function(el,options) {
                 this.$el = $(el)
                 this.$item = this.$el.find('.rating-item')
                 this.opts = options
+
+                // 1.先把半颗/整颗星星的构造函数先改成一样的，这样比较好抽出来
+                this.add = 1;
+                this.selectEvent = 'mouseover'
             }
-            // 给 lightEntire 函数原型链上添加方法
-            lightEntire.prototype.lightOn = function(num) {
+            light.prototype.lightOn = function(num) {
                 num = parseInt(num)
                 this.$item.each(function(index) {
                     if(index < num) {
@@ -55,66 +66,14 @@
                     }
                 })
             }
-            lightEntire.prototype.bindEvent = function() {
+            light.prototype.bindEvent = function() {
                 var self = this,
                     itemLength = self.$item.length
-                self.$el.on('mouseover','.rating-item',function() {
-                    var num = $(this).index() + 1;
-                    self.lightOn(num);
-                    (typeof self.opts.select === 'function') && self.opts.select(this,num,itemLength);
-                    self.$el.trigger('select',[num,itemLength])
-                }).on('click','.rating-item',function() {
-                    self.opts.num = $(this).index() + 1;
-                    (typeof self.opts.select === 'function') && self.opts.chosen.call(this,self.opts.num,itemLength);
-                    self.$el.trigger('chosen',[self.opts.num,itemLength])
-                }).on('mouseout',function() {
-                    self.lightOn(self.opts.num)
-                })
-            }
-            // init 调用 lightEntire 原型链上的这些方法
-            lightEntire.prototype.init = function() {
-                this.lightOn(this.opts.num)
-                if(!this.opts.readOnly) {
-                    this.bindEvent()
-                }
-            }
-
-
-            // 点亮半颗
-            // 初始化 lightHalf 函数
-            var lightHalf = function(el,options) {
-                this.$el = $(el);
-                this.$item = this.$el.find('.rating-item');
-                this.opts = options;
-                this.add = 1;
-            }
-            // 给 lightHalf 函数原型链上添加方法
-            lightHalf.prototype.lightOn = function(num) {
-                var count = parseInt(num)
-                    isHalf = count !== num;
-                this.$item.each(function(index) {
-                    if(index < num) {
-                        $(this).css('background-position','0 -40px')
-                    } else {
-                        $(this).css('background-position','0 0')
-                    }
-                })
-                if(isHalf) {
-                    this.$item.eq(count).css('background-position','0 -80px');
-                }
-            }
-            lightHalf.prototype.bindEvent = function() {
-                var self = this,
-                    itemLength = self.$item.length
-                self.$el.on('mousemove','.rating-item',function(e) {
+                self.$el.on(self.selectEvent,'.rating-item',function(e) {
                     var $this = $(this),
                         num = 0;
-                    if(e.pageX - $this[0].offsetLeft < $this[0].offsetWidth/2) {  // 半颗
-                        self.add = 0.5;
-                    } else {
-                        self.add = 1;
-                    }
-                    num = $this.index() + self.add;
+                    self.select(e,$this);
+                    num = $(this).index() + self.add;
                     self.lightOn(num);
                     (typeof self.opts.select === 'function') && self.opts.select(this,num,itemLength);
                     self.$el.trigger('select',[num,itemLength])
@@ -126,18 +85,52 @@
                     self.lightOn(self.opts.num)
                 })
             }
-            // init 调用 lightHalf 原型链上的这些方法
-            lightHalf.prototype.init = function() {
+            light.prototype.init = function() {
                 this.lightOn(this.opts.num)
                 if(!this.opts.readOnly) {
                     this.bindEvent()
                 }
             }
+            light.prototype.select = function() {
+                throw new Error('子类必须重写此方法')
+            }
+
+            // 点亮整颗
+            var lightEntire = function(el,options) {
+                light.call(this,el,options)
+                this.selectEvent = 'mouseover'
+            }
+            extend(lightEntire,light);
+            lightEntire.prototype.lightOn = function(num) {
+                light.prototype.lightOn.call(this,num);
+            }
+            lightEntire.prototype.select = function() {
+                self.add = 1;
+            }
+
+            // 点亮半颗
+            var lightHalf = function(el,options) {
+                light.call(this,el,options)
+                this.selectEvent = 'mousemove'
+            }
+            extend(lightHalf,light);
+            lightHalf.prototype.lightOn = function(num) {
+                var count = parseInt(num)
+                    isHalf = count !== num;
+                light.prototype.lightOn.call(this,count);
+                if(isHalf) {
+                    this.$item.eq(count).css('background-position','0 -80px');
+                }
+            }
+            lightHalf.prototype.select = function(e,$this) {
+                if(e.pageX - $this[0].offsetLeft < $this[0].offsetWidth/2) {  // 半颗
+                    this.add = 0.5;
+                } else {
+                    this.add = 1;
+                }
+            }
 
 
-
-
-            // 默认参数
             var defaults = {
                 mode: 'lightEntire',
                 num: 0,
@@ -149,11 +142,8 @@
                 'lightEntire': lightEntire,
                 'lightHalf': lightHalf
             }
-            // 初始化
             var init = function(el,options) {
                 options = $.extend({},defaults,options)
-                // new lightEntire(el,options).init()
-                // new lightHalf(el,options).init()
                 if(!mode[options.mode]) {
                     options.mode = 'lightEntire'
                 }
@@ -164,17 +154,9 @@
             }
         })()
         rating.init('#rating',{
-            mode: 'lightHalf',
-            num: 2.5,
-            // select:function(num,total) {
-            //    console.log(num + '/' + total); 
-            // }
+            mode: 'lightEntire',
+            num: 2,
         })
-        // $('#rating').on('select',function(e,num,total) {
-        //     console.log(num + '/' + total)
-        // }).on('chosen',function(e,num,total) {
-        //     console.log(num + '/' + total)
-        // })
     </script>
 </body>
 </html>
